@@ -14,17 +14,17 @@ using namespace std;
 int status;
 int master_fd;
 int len;
-struct addrinfo host_info;
-struct addrinfo * host_info_list;
-struct sockaddr_storage socket_addr;
+//struct addrinfo host_info;
+//struct addrinfo * host_info_list;
+//struct sockaddr_storage socket_addr;
 struct sockaddr_in newplayer, master_sock;
 char host[64], str[64];
 char buffer[40960], temp[40960];
 struct hostent * master_host_addr;
 socklen_t newplayer_addr_len = sizeof(newplayer);
-socklen_t socket_addr_len = sizeof(socket_addr);
+//socklen_t socket_addr_len = sizeof(socket_addr);
 
-void set_server(const char * port, const char * hostname, int port_num) {
+void set_server(char host[64], const char * port, int port_num) {
   //set address and port
   master_sock.sin_family = AF_INET;
   master_sock.sin_port = htons(port_num);
@@ -33,7 +33,7 @@ void set_server(const char * port, const char * hostname, int port_num) {
   master_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (master_fd == -1) {
     cerr << "Error: cannot create socket" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
+    cerr << "  (" << host << "," << port << ")" << endl;
     exit(-1);
   }  //if
 
@@ -42,14 +42,14 @@ void set_server(const char * port, const char * hostname, int port_num) {
   status = bind(master_fd, (struct sockaddr *)&master_sock, sizeof(master_sock));
   if (status == -1) {
     cerr << "Error: cannot bind socket" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
+    cerr << "  (" << host << "," << port << ")" << endl;
     exit(-1);
   }  //if
 
   status = listen(master_fd, 100);
   if (status == -1) {
     cerr << "Error: cannot listen on socket" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
+    cerr << "  (" << host << "," << port << ")" << endl;
     exit(-1);
   }  //if
 
@@ -99,8 +99,6 @@ void neigh_setup(potato * player_list, int num_players) {
 int main(int argc, char * argv[]) {
   potato * player_list;
 
-  const char * hostname = NULL;
-
   if (argc != 4) {
     fprintf(stderr, "Usage: %s <port_num> <num_players> <num_hops>\n", argv[0]);
     exit(1);
@@ -123,8 +121,8 @@ int main(int argc, char * argv[]) {
   //set port number to argv[1]
   const char * port = argv[1];
 
-  set_server(hostname, port, port_num);
   gethostname(host, sizeof(host));
+  set_server(host, port, port_num);
   master_host_addr = gethostbyname(host);
   if (master_host_addr == NULL) {
     fprintf(stderr, "%s: host not found (%s)\n", argv[0], host);
