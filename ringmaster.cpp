@@ -70,7 +70,7 @@ potato connect_player(potato player) {
 void neigh_setup(potato * player_list, int num_players) {
   //receive msg from player
   for (int i = 0; i < num_players; i++) {
-    len = recv(player_list[i].playerfd, buffer, 32, 0);
+    len = recv(player_list[i].playerfd, buffer, strlen(buffer), 0);
     buffer[len] = '\0';
     cout << "Server received: " << buffer << endl;
     if (len > 0) {
@@ -85,9 +85,8 @@ void neigh_setup(potato * player_list, int num_players) {
   //inform players of their right neighbour
   for (int i = 0; i < num_players; i++) {
     sprintf(buffer,
-            "%s %s %d %d %s %d",
-            "Right",
-            " Player:",
+            "%d %d %s %d",
+
             num_players,
             player_list[(i + 1) % num_players].player_id,
             player_list[(i + 1) % num_players].player_hostname,
@@ -108,6 +107,7 @@ int main(int argc, char * argv[]) {
   int num_players = atoi(argv[2]);
   int num_hops = atoi(argv[3]);
   //Initial Erro Checking
+
   if (port_num < 0) {
     printf("Invalid Port Numebr\n");
     return 0;
@@ -123,12 +123,16 @@ int main(int argc, char * argv[]) {
   const char * port = argv[1];
 
   gethostname(host, sizeof(host));
+
   set_server(host, port, port_num);
+  cout << "finish setserver" << endl;
   master_host_addr = gethostbyname(host);
+  cout << "reached here" << endl;
   if (master_host_addr == NULL) {
     fprintf(stderr, "%s: host not found (%s)\n", argv[0], host);
     exit(1);
   }
+
   cout << "Master on " << host << endl;
   cout << "Port Number" << port_num << endl;
   cout << "Number of Players " << num_players << endl;
@@ -138,6 +142,7 @@ int main(int argc, char * argv[]) {
   //initialize player list;
   player_list = (potato *)malloc(num_players * sizeof(struct potato_t));
   //assign value to each of player in the list
+  cout << "finish malloc" << endl;
   for (int i = 0; i < num_players; i++) {
     player_list[i] = connect_player(player_list[i]);
     //set value to potato struct
@@ -149,7 +154,7 @@ int main(int argc, char * argv[]) {
 
     //send player_id to player
     sprintf(str, "%d", player_list[i].player_id);
-    len = send(player_list[i].playerfd, str, sizeof(str), 0);
+    len = send(player_list[i].playerfd, str, strlen(str), 0);
     //len = send(player_list[i].playerfd, player_list[i], sizeof(struct potato_t), 0);
   }
 
@@ -163,7 +168,7 @@ int main(int argc, char * argv[]) {
   neigh_setup(player_list, num_players);
   //check msg Player <number> is ready to play
   for (int i = 0; i < num_players; i++) {
-    len = recv(player_list[i].playerfd, buffer, 32, 0);
+    len = recv(player_list[i].playerfd, buffer, strlen(buffer), 0);
     buffer[len] = '\0';
     cout << "Server received: " << buffer << endl;
   }
@@ -219,6 +224,7 @@ int main(int argc, char * argv[]) {
     }
     len = recv(player_list[Player_return].playerfd, buffer, strlen(buffer), 0);
     buffer[len] = '\0';
+    cout << buffer << "returned potato" << endl;
     //haven't figured out a way to print trace
     cout << "Trace of Potato:" << endl;
     sprintf(str, "%s", "exit");
