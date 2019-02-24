@@ -3,7 +3,7 @@
 using namespace std;
 struct potato_t {
   int hops_total;
-  int hops_remain;
+  int player_num;
   int player_id;
   int player_port;
   //may not be used hostname
@@ -16,10 +16,7 @@ typedef struct potato_t potato;
 
 void initialize_potato(potato * p) {
   p->hops_total = 0;
-  p->hops_remain = 0;
+
   p->player_id = -1;
   //p->player_list = "";
-}
-void update(potato * p) {
-  p->hops_remain -= 1;
 }

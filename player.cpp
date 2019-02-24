@@ -16,20 +16,26 @@
 #include "potato.h"
 
 int status;
-int master_fd, player_fd;
+int server_fd, player_fd, left_fd, right_fd;
 int valread;
 int len;
+int left_player_id, right_player_id;
+int num_hops;
 int port_num_master, port_num_player;
 struct sockaddr_in newplayer, master_sock;
-char str[64];
+char Potato_str[40960], player_hostname[64];
 char buffer[40960], temp[40960];
-struct hostent * master_host_addr;
+struct hostent *master_host_addr, *player_host_addr;
 struct sockaddr_in left_player, right_player;
+struct sockaddr_in server_in, player_in;
+socklen_t newplayer_addr_len = sizeof(player_in);
 const char * port;
 using namespace std;
 potato * plyr = NULL;
+int flag;
+int fdmax;
 
-void set_player(const char * host, int port_num_master) {
+void set_player(const char * host, int port_num_master, potato * plyr) {
   master_sock.sin_family = AF_INET;
   master_sock.sin_port = htons(port_num_master);
   memcpy(&master_sock.sin_addr, master_host_addr->h_addr_list[0], master_host_addr->h_length);
@@ -41,32 +47,149 @@ void set_player(const char * host, int port_num_master) {
     exit(-1);
   }  //if
 
-  int yes = 1;
-  status = setsockopt(master_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-  status = bind(master_fd, (struct sockaddr *)&master_sock, sizeof(master_sock));
+  cout << "Connecting to " << host << " on port " << port << "..." << endl;
+
+  status = connect(player_fd, (struct sockaddr *)&master_sock, sizeof(master_sock));
+  ;
   if (status == -1) {
-    cerr << "Error: cannot bind socket" << endl;
+    cerr << "Error: cannot connect to socket" << endl;
     cerr << "  (" << host << "," << port << ")" << endl;
     exit(-1);
   }  //if
-
-  status = listen(master_fd, 100);
-  if (status == -1) {
-    cerr << "Error: cannot listen on socket" << endl;
-    cerr << "  (" << host << "," << port << ")" << endl;
-    exit(-1);
-  }  //if
-
-  cout << "Waiting for connection on port " << port << endl;
+     //receive player info;
+  len = recv(player_fd, plyr, sizeof(struct potato_t), 0);
+  cout << "Player ID:" << plyr->player_id << endl;
 }
-//connect to players and store information in potato
-void connect_player(potato player) {
-  player.playerfd = accept(master_fd, (struct sockaddr *)&newplayer, &newplayer_addr_len);
-  if (player.playerfd == -1) {
+void connect_neighbour() {
+  right_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (player_fd == -1) {
+    cerr << "Error: cannot create socket" << endl;
+    exit(-1);
+  }  //if
+  status = connect(right_fd, (struct sockaddr *)&player_in, sizeof(player_in));
+  if (status == -1) {
+    cerr << "Error: cannot connect to socket" << endl;
+    exit(-1);
+  }  //if
+  left_fd = accept(server_fd, (struct sockaddr *)&player_in, &newplayer_addr_len);
+  if (status == -1) {
     cerr << "Error: cannot accept connection on socket" << endl;
     exit(-1);
   }
-  player.host_addr = gethostbyaddr((char *)&newplayer.sin_addr, sizeof(struct in_addr), AF_INET);
+}
+
+//int get_hops(char buffer[40960]) {}
+
+void play() {
+  fd_set read_fds;  // temp file descriptor list for select()
+
+  while (1) {
+    FD_ZERO(&read_fds);  //clear temp sets
+    FD_SET(player_fd, &read_fds);
+    FD_SET(right_fd, &read_fds);
+    FD_SET(left_fd, &read_fds);
+    //get max value for fd;
+    fdmax = player_fd;
+    if (fdmax < right_fd) {
+      fdmax = right_fd;
+    }
+    if (fdmax < left_fd) {
+      fdmax = left_fd;
+    }
+    //wait to see where does potato come from
+    len = select(fdmax + 1, &read_fds, NULL, NULL, NULL);
+    if (len == -1) {
+      perror("select");
+      exit(4);
+    }
+    //this case is from server for start;
+    if (FD_ISSET(player_fd, &read_fds)) {
+      len = recv(player_fd, buffer, 40960, 0);
+      buffer[len] = '\0';
+      //close signal
+
+      if (!strcmp("close", buffer)) {
+        return;
+      }
+      else {
+        // num_hops = get_hops(buffer);
+        strcpy(temp, buffer);
+        char * temp_ptr;
+        //input: Start! Available Hops #<num_hops>
+        temp_ptr = strtok(temp, " ");
+        //this part is <num_hops>
+        temp_ptr = strtok(NULL, " ");
+        //store this value
+        num_hops = atoi(temp_ptr);
+      }
+    }
+    //this case is from right player;
+    else if (FD_ISSET(right_fd, &read_fds)) {
+      len = recv(player_fd, buffer, 40960, 0);
+      buffer[len] = '\0';
+      strcpy(temp, buffer);
+      char * temp_ptr;
+      //input: Start! Available Hops #<num_hops>
+      temp_ptr = strtok(temp, " ");
+      //this part is <num_hops>
+      temp_ptr = strtok(NULL, " ");
+      //store this value
+      num_hops = atoi(temp_ptr);
+    }
+    //this case is from left player;
+    else if (FD_ISSET(left_fd, &read_fds)) {
+      len = recv(player_fd, buffer, 40960, 0);
+      buffer[len] = '\0';
+      strcpy(temp, buffer);
+      char * temp_ptr;
+      //input: Start! Available Hops #<num_hops>
+      temp_ptr = strtok(temp, " ");
+      //this part is <num_hops>
+      temp_ptr = strtok(NULL, " ");
+      //store this value
+      num_hops = atoi(temp_ptr);
+    }
+    //game time
+    if (num_hops == 1) {
+      //num_hops--=0
+      cout << "I'm it!" << endl;
+      sprintf(buffer, "%s %d", "Player_ID:", plyr->player_id);
+      len = send(player_fd, buffer, sizeof(buffer), 0);
+    }
+    //time for left and right pass
+    else {
+      num_hops--;
+      int num_players = plyr->player_num;
+      //right
+      if (rand() % 2 == 0) {
+        right_player_id = (plyr->player_id + 1) % num_players;
+        sprintf(Potato_str,
+                "%s %s %s %s%d %s%d",
+                "Pass",
+                "to",
+                "Player",
+                "Number",
+                right_player_id,
+                "Num_hops#",
+                num_hops);
+        len = send(right_fd, Potato_str, sizeof(Potato_str), 0);
+      }
+      //left
+      else {
+        left_player_id = (plyr->player_id + 1) % num_players;
+        sprintf(Potato_str,
+                "%s %s %s %s%d %s%d",
+                "Pass",
+                "to",
+                "Player",
+                "Number",
+                left_player_id,
+                "Num_hops#",
+                num_hops);
+        len = send(left_fd, Potato_str, sizeof(Potato_str), 0);
+      }
+    }
+  }
 }
 
 int main(int argc, char * argv[]) {
@@ -90,47 +213,50 @@ int main(int argc, char * argv[]) {
   //two types of argv[2];
   port = argv[2];
   port_num_master = atoi(argv[2]);
-  set_player(host, port_num_master);
+  set_player(host, port_num_master, plyr);
+  //server set up
 
-  memset(&host_info, 0, sizeof(host_info));
-  host_info.ai_family = AF_UNSPEC;
-  host_info.ai_socktype = SOCK_STREAM;
-
-  status = getaddrinfo(hostname, port, &host_info, &host_info_list);
-  if (status != 0) {
-    cerr << "Error: cannot get address info for host" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
-    return -1;
-  }  //if
-
-  socket_fd =
-      socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
-  if (socket_fd == -1) {
+  gethostname(player_hostname, sizeof(player_hostname));
+  player_host_addr = gethostbyname(player_hostname);
+  if (player_host_addr == NULL) {
+    fprintf(stderr, "%s: host not found (%s)\n", argv[0], host);
+    exit(1);
+  }
+  server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (server_fd == -1) {
     cerr << "Error: cannot create socket" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
-    return -1;
+    cerr << "  (" << host << "," << port << ")" << endl;
+    exit(-1);
   }  //if
 
-  cout << "Connecting to " << hostname << " on port " << port << "..." << endl;
-
-  status = connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
+  port_num_player = 1000 + (rand() % 10000);
+  server_in.sin_family = AF_INET;
+  flag = 0;
+  while (flag != 1) {
+    server_in.sin_port = htons(port_num_player);
+    memcpy(&server_in.sin_addr, player_host_addr->h_addr_list[0], player_host_addr->h_length);
+    status = bind(server_fd, (struct sockaddr *)&server_in, sizeof(server_in));
+    if (status < 0) {
+      port_num_player++;
+    }
+    else {
+      flag = 1;
+    }
+  }
+  status = listen(server_fd, 5);
   if (status == -1) {
-    cerr << "Error: cannot connect to socket" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
-    return -1;
+    cerr << "Error: cannot listen on socket" << endl;
+    cerr << "  (" << host << "," << port << ")" << endl;
+    exit(-1);
   }  //if
 
-  const char * message = "hi there!";
-  send(socket_fd, message, strlen(message), 0);
-  // char buffer[512];
-  // recv(socket_fd, buffer, 40, 0);
-  // buffer[40] = 0;
-  char buffer[1024] = {0};
-  valread = read(socket_fd, buffer, 1024);
-  cout << "Player received: " << buffer << endl;
+  cout << "Waiting for connection on port " << port_num_player << endl;
+  //connect to neighbours
+  recv(player_fd, &player_in, sizeof(struct sockaddr_in), 0);
 
-  freeaddrinfo(host_info_list);
-  close(socket_fd);
-
+  connect_neighbour();
+  play();
+  close(player_fd);
+  close(left_fd);
   return 0;
 }

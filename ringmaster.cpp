@@ -46,7 +46,7 @@ void set_server(char host[64], const char * port, int port_num) {
     exit(-1);
   }  //if
 
-  status = listen(master_fd, 100);
+  status = listen(master_fd, 5);
   if (status == -1) {
     cerr << "Error: cannot listen on socket" << endl;
     cerr << "  (" << host << "," << port << ")" << endl;
@@ -56,7 +56,7 @@ void set_server(char host[64], const char * port, int port_num) {
   cout << "Waiting for connection on port " << port << endl;
 }
 //connect to players and store information in potato
-void connect_player(potato player) {
+potato connect_player(potato player) {
   player.playerfd = accept(master_fd, (struct sockaddr *)&newplayer, &newplayer_addr_len);
   if (player.playerfd == -1) {
     cerr << "Error: cannot accept connection on socket" << endl;
@@ -64,6 +64,7 @@ void connect_player(potato player) {
   }
   player.host_addr = gethostbyaddr((char *)&newplayer.sin_addr, sizeof(struct in_addr), AF_INET);
   //update potato struct
+  return player;
 }
 
 void neigh_setup(potato * player_list, int num_players) {
@@ -138,15 +139,18 @@ int main(int argc, char * argv[]) {
   player_list = (potato *)malloc(num_players * sizeof(struct potato_t));
   //assign value to each of player in the list
   for (int i = 0; i < num_players; i++) {
-    connect_player(player_list[i]);
+    player_list[i] = connect_player(player_list[i]);
     //set value to potato struct
     player_list[i].hops_total = num_hops;
+    player_list[i].player_num = num_players;
     player_list[i].player_id = i;
     cout << "Player " << player_list[i].player_id << "on PORT " << port_num << endl;
     //send
-    //need to change the info being sent
-    const char * ini_msg = "Player <Number> is ready to play";
-    len = send(player_list[i].playerfd, ini_msg, strlen(ini_msg), 0);
+
+    //send player_id to player
+    sprintf(str, "%d", player_list[i].player_id);
+    len = send(player_list[i].playerfd, str, sizeof(str), 0);
+    //len = send(player_list[i].playerfd, player_list[i], sizeof(struct potato_t), 0);
   }
 
   // client_connection_fd = accept(master_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
@@ -199,7 +203,7 @@ int main(int argc, char * argv[]) {
     //send starting info to the selected player
     len = send(player_list[first_player_id].playerfd, str, strlen(str), 0);
 
-    len = select(fdmax, &read_fds, NULL, NULL, NULL);
+    len = select(fdmax + 1, &read_fds, NULL, NULL, NULL);
     if (len == -1) {
       perror("select");
       exit(4);
