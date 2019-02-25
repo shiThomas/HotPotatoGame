@@ -54,7 +54,7 @@ int set_player(const char * host, int port_num_master) {
     exit(-1);
   }  //if
 
-  cout << "Connecting to " << host << " on port " << port << "..." << endl;
+  //  cout << "Connecting to " << host << " on port " << port << "..." << endl;
 
   status = connect(player_fd, (struct sockaddr *)&master_sock, sizeof(master_sock));
   ;

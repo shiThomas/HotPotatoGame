@@ -140,7 +140,7 @@ int main(int argc, char * argv[]) {
   set_server(host, port, port_num);
   //cout << "finish setserver" << endl;
 
-  cout << "Port Number " << port_num << endl;
+  //  cout << "Port Number " << port_num << endl;
   cout << "Potato Ringmaster" << endl;
   cout << "Number of Players " << num_players << endl;
   cout << "Number of Hops " << num_hops << endl;
@@ -185,12 +185,13 @@ int main(int argc, char * argv[]) {
   for (int i = 0; i < num_players; i++) {
     len = recv(player_list[i].playerfd, ready_msg, sizeof(ready_msg), 0);
     ready_msg[len] = '\0';
+    sleep(1);
     cout << "Server received: " << ready_msg << endl;
   }
 
   //game start
   //Define some variables for game start here
-
+  sleep(3);
   //when there is no hops
   if (num_hops == 0) {
     cout << "Ready to start the game, sending potato to player: No Player" << endl;
@@ -263,7 +264,7 @@ int main(int argc, char * argv[]) {
   }
 
   //closing window
-  sleep(3);
+  sleep(2);
   close(master_fd);
   return 0;
 }
