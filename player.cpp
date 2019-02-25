@@ -64,14 +64,16 @@ int set_player(const char * host, int port_num_master) {
   }  //if
 
   //receive player info;
-  len = recv(player_fd, buffer, strlen(buffer), 0);
+  char plyr_id[64];
+  len = recv(player_fd, plyr_id, sizeof(plyr_id), 0);
   //decide not to pass potato
   //len = recv(player_fd, plyr, sizeof(struct potato_t), 0);
-  buffer[len] = '\0';
-  player_id = atoi(buffer);
+  plyr_id[len] = '\0';
+  player_id = atoi(plyr_id);
   cout << "Player ID:" << player_id << endl;
   //send port info and hostname to master;
   sprintf(buffer, "%d %s", port_num_master, host);
+  cout << " things to be sent " << buffer << endl;
   len = send(player_fd, buffer, strlen(buffer), 0);
   cout << "player info sent success" << endl;
   //  sprintf(buffer, "%s %d %s %s", "Player", player_id, "is", "ready");
@@ -157,11 +159,12 @@ void play() {
     }
     //this case is from server for start;
     if (FD_ISSET(player_fd, &read_fds)) {
-      len = recv(player_fd, buffer, 40960, 0);
-      buffer[len] = '\0';
+      char game[512];
+      len = recv(player_fd, game, sizeof(game), 0);
+      game[len] = '\0';
       //close signal
 
-      if (!strcmp("exit", buffer)) {
+      if (strcmp("exit", game)) {
         return;
       }
       else {
@@ -178,9 +181,10 @@ void play() {
     }
     //this case is from right player;
     else if (FD_ISSET(right_fd, &read_fds)) {
-      len = recv(player_fd, buffer, 40960, 0);
-      buffer[len] = '\0';
-      strcpy(temp, buffer);
+      char from_right[512];
+      len = recv(player_fd, from_right, sizeof(from_right), 0);
+      from_right[len] = '\0';
+      strcpy(temp, from_right);
       char * temp_ptr;
       //input: Start! Available Hops #<num_hops>
       temp_ptr = strtok(temp, "#");
@@ -191,9 +195,10 @@ void play() {
     }
     //this case is from left player;
     else if (FD_ISSET(left_fd, &read_fds)) {
-      len = recv(player_fd, buffer, 40960, 0);
-      buffer[len] = '\0';
-      strcpy(temp, buffer);
+      char from_left[512];
+      len = recv(player_fd, from_left, sizeof(from_left), 0);
+      from_left[len] = '\0';
+      strcpy(temp, from_left);
       char * temp_ptr;
       //input: Start! Available Hops #<num_hops>
       temp_ptr = strtok(temp, "#");
@@ -206,8 +211,9 @@ void play() {
     if (num_hops == 1) {
       //num_hops--=0
       cout << "I'm it!" << endl;
-      sprintf(buffer, "%s %d", "Player_ID:", player_id);
-      len = send(player_fd, buffer, strlen(buffer), 0);
+      char end_msg[64];
+      sprintf(end_msg, "%s %d", "Player_ID:", player_id);
+      len = send(player_fd, end_msg, strlen(end_msg), 0);
     }
     //time for left and right pass
     else {
@@ -286,7 +292,7 @@ int main(int argc, char * argv[]) {
     exit(-1);
   }  //if
 
-  port_num_player = 1000 + (rand() % 10000);
+  port_num_player = 1000 + player_id;
   server_in.sin_family = AF_INET;
   flag = 0;
   while (flag != 1) {
@@ -309,10 +315,12 @@ int main(int argc, char * argv[]) {
 
   cout << "Waiting for connection on port " << port_num_player << endl;
   //neighbour info including id, host and port
-  len = recv(player_fd, buffer, strlen(buffer), 0);
-  buffer[len] = '\0';
+  char right_info[512];
+  len = recv(player_fd, right_info, sizeof(right_info), 0);
+  right_info[len] = '\0';
   //parse info
-  strcpy(temp, buffer);
+  cout << "received neigh info " << right_info << endl;
+  strcpy(temp, right_info);
   char * temp_ptr;
   temp_ptr = strtok(temp, " ");
   //num_players declared here
@@ -327,11 +335,15 @@ int main(int argc, char * argv[]) {
   //right port here
   right_port = atoi(temp_ptr);
   //connect to neighbour
+  cout << "settings for right finished" << endl;
   set_right_player();
+  cout << "finish setting right player" << endl;
   connect_neigh();
+  cout << "finish connecting neigh" << endl;
   //send ready
-  sprintf(buffer, "%s %d %s %s %s %s", "Player", player_id, "is", "ready", "to", "play!");
-  len = send(player_fd, buffer, strlen(buffer), 0);
+  char ready_msg[64];
+  sprintf(ready_msg, "%s %d %s %s %s %s", "Player", player_id, "is", "ready", "to", "play!");
+  len = send(player_fd, ready_msg, strlen(ready_msg), 0);
 
   play();
   sleep(3);

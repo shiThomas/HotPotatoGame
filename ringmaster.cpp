@@ -28,8 +28,9 @@ void set_server(char host[64], const char * port, int port_num) {
   //set address and port
   master_sock.sin_family = AF_INET;
   master_sock.sin_port = htons(port_num);
+  //  cout << "before memcpy" << endl;
   memcpy(&master_sock.sin_addr, master_host_addr->h_addr_list[0], master_host_addr->h_length);
-
+  // cout << "finish memcpy" << endl;
   master_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (master_fd == -1) {
     cerr << "Error: cannot create socket" << endl;
@@ -70,7 +71,7 @@ potato connect_player(potato player) {
 void neigh_setup(potato * player_list, int num_players) {
   //receive msg from player
   for (int i = 0; i < num_players; i++) {
-    len = recv(player_list[i].playerfd, buffer, strlen(buffer), 0);
+    len = recv(player_list[i].playerfd, buffer, 32, 0);
     buffer[len] = '\0';
     cout << "Server received: " << buffer << endl;
     if (len > 0) {
@@ -81,19 +82,24 @@ void neigh_setup(potato * player_list, int num_players) {
       temp_ptr = strtok(NULL, " ");
       strcpy(player_list[i].player_hostname, temp_ptr);
     }
+    cout << "hostname " << player_list[i].player_hostname << endl;
+    cout << "port " << player_list[i].player_port << endl;
   }
+
   //inform players of their right neighbour
   for (int i = 0; i < num_players; i++) {
-    sprintf(buffer,
+    char neigh_info[512];
+    sprintf(neigh_info,
             "%d %d %s %d",
 
             num_players,
             player_list[(i + 1) % num_players].player_id,
             player_list[(i + 1) % num_players].player_hostname,
             player_list[(i + 1) % num_players].player_port);
-
-    len = send(player_list[i].playerfd, buffer, strlen(buffer), 0);
+    cout << "Neigh Info " << neigh_info << endl;
+    len = send(player_list[i].playerfd, neigh_info, strlen(neigh_info), 0);
   }
+  cout << "neigh info sent" << endl;
 }
 
 int main(int argc, char * argv[]) {
@@ -123,39 +129,46 @@ int main(int argc, char * argv[]) {
   const char * port = argv[1];
 
   gethostname(host, sizeof(host));
-
-  set_server(host, port, port_num);
-  cout << "finish setserver" << endl;
   master_host_addr = gethostbyname(host);
-  cout << "reached here" << endl;
+
   if (master_host_addr == NULL) {
     fprintf(stderr, "%s: host not found (%s)\n", argv[0], host);
     exit(1);
   }
+  //cout << "before setserver" << endl;
+
+  set_server(host, port, port_num);
+  //cout << "finish setserver" << endl;
 
   cout << "Master on " << host << endl;
-  cout << "Port Number" << port_num << endl;
+  cout << "Port Number " << port_num << endl;
   cout << "Number of Players " << num_players << endl;
-  cout << "Number of Hops" << num_hops << endl;
+  cout << "Number of Hops " << num_hops << endl;
 
   // int client_connection_fd;
   //initialize player list;
   player_list = (potato *)malloc(num_players * sizeof(struct potato_t));
   //assign value to each of player in the list
-  cout << "finish malloc" << endl;
+  // cout << "finish malloc" << endl;
   for (int i = 0; i < num_players; i++) {
     player_list[i] = connect_player(player_list[i]);
     //set value to potato struct
     player_list[i].hops_total = num_hops;
     player_list[i].player_num = num_players;
     player_list[i].player_id = i;
-    cout << "Player " << player_list[i].player_id << "on PORT " << port_num << endl;
+    cout << "Player " << player_list[i].player_id << " on PORT " << port_num << endl;
     //send
 
+    //len = send(player_list[i].playerfd, player_list[i], sizeof(struct potato_t), 0);
+  }
+
+  //finish sending player_id, send msg to activate player
+  for (int i = 0; i < num_players; i++) {
+    //   sprintf(buffer, "%s", "ready");
+    //   len = send(player_list[i].playerfd, buffer, 5, 0);
     //send player_id to player
     sprintf(str, "%d", player_list[i].player_id);
     len = send(player_list[i].playerfd, str, strlen(str), 0);
-    //len = send(player_list[i].playerfd, player_list[i], sizeof(struct potato_t), 0);
   }
 
   // client_connection_fd = accept(master_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
@@ -167,10 +180,13 @@ int main(int argc, char * argv[]) {
   //receive msgs from players
   neigh_setup(player_list, num_players);
   //check msg Player <number> is ready to play
+
+  cout << "ready to play msg" << endl;
+  char ready_msg[64];
   for (int i = 0; i < num_players; i++) {
-    len = recv(player_list[i].playerfd, buffer, strlen(buffer), 0);
-    buffer[len] = '\0';
-    cout << "Server received: " << buffer << endl;
+    len = recv(player_list[i].playerfd, ready_msg, sizeof(ready_msg), 0);
+    ready_msg[len] = '\0';
+    cout << "Server received: " << ready_msg << endl;
   }
 
   //game start
@@ -180,10 +196,11 @@ int main(int argc, char * argv[]) {
   if (num_hops == 0) {
     cout << "Game has started, sending potato to player: No Player" << endl;
     cout << "Trace of Potato:" << endl;
-    sprintf(str, "%s", "exit");
+    char exit_msg[64];
+    sprintf(exit_msg, "%s", "exit");
     //inform players to exit
     for (int i = 0; i < num_players; i++) {
-      len = send(player_list[i].playerfd, str, strlen(str), 0);
+      len = send(player_list[i].playerfd, exit_msg, strlen(exit_msg), 0);
       // if (len != strlen(str)) {
       // perror("send");
       // exit(1);
@@ -222,15 +239,17 @@ int main(int argc, char * argv[]) {
         break;
       }
     }
-    len = recv(player_list[Player_return].playerfd, buffer, strlen(buffer), 0);
-    buffer[len] = '\0';
-    cout << buffer << "returned potato" << endl;
+    char return_msg[64];
+    len = recv(player_list[Player_return].playerfd, return_msg, sizeof(return_msg), 0);
+    return_msg[len] = '\0';
+    cout << "Player " << return_msg << " returned potato" << endl;
     //haven't figured out a way to print trace
     cout << "Trace of Potato:" << endl;
-    sprintf(str, "%s", "exit");
+    char exit_m[64];
+    sprintf(exit_m, "%s", "exit");
     //inform players to exit
     for (int i = 0; i < num_players; i++) {
-      len = send(player_list[i].playerfd, str, strlen(str), 0);
+      len = send(player_list[i].playerfd, exit_m, strlen(exit_m), 0);
     }
   }
 
