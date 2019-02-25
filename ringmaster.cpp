@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <cstring>
@@ -209,6 +210,7 @@ int main(int argc, char * argv[]) {
   //When hops exist
   else {
     //initialize variables for game;
+    srand(time(0));
     int first_player_id = rand() % num_players;
     int fdmax;
     fdmax = master_fd;
@@ -223,6 +225,7 @@ int main(int argc, char * argv[]) {
     cout << "Game has started, sending potato to player: " << first_player_id << endl;
     sprintf(str, "%s %s %s %s%d", "Start!", "Available", " Hops", "#", num_hops);
     //send starting info to the selected player
+    cout << "sending" << str << endl;
     len = send(player_list[first_player_id].playerfd, str, strlen(str), 0);
 
     len = select(fdmax + 1, &read_fds, NULL, NULL, NULL);
