@@ -105,7 +105,7 @@ void neigh_setup(potato * player_list, int num_players) {
 
 int main(int argc, char * argv[]) {
   potato * player_list;
-
+  srand(time(NULL));
   if (argc != 4) {
     fprintf(stderr, "Usage: %s <port_num> <num_players> <num_hops>\n", argv[0]);
     exit(1);
@@ -210,7 +210,7 @@ int main(int argc, char * argv[]) {
   //When hops exist
   else {
     //initialize variables for game;
-    srand(time(0));
+
     int first_player_id = rand() % num_players;
     int fdmax;
     fdmax = master_fd;

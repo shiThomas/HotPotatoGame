@@ -101,9 +101,10 @@ void set_right_player() {
 void connect_neigh() {
   //right then left
   if (player_id == 0) {
-    cout << "player 0" << endl;
+    //cout << "player 0" << endl;
     status = connect(right_fd, (struct sockaddr *)&right_sock, sizeof(right_sock));
     cout << "connect success" << endl;
+    cout << "right port" << right_port << endl;
     if (status == -1) {
       cerr << "Error: cannot connect to socket" << endl;
       cerr << "  (" << right_hostname << "," << right_port << ")" << endl;
@@ -118,7 +119,7 @@ void connect_neigh() {
   }
   //left then right
   else {
-    cout << "player not 0" << endl;
+    //cout << "player not 0" << endl;
     left_fd = accept(server_fd, (struct sockaddr *)&player_in, &newplayer_addr_len);
     cout << "accept success" << endl;
     if (status == -1) {
@@ -127,6 +128,7 @@ void connect_neigh() {
     }
     status = connect(right_fd, (struct sockaddr *)&right_sock, sizeof(right_sock));
     cout << "connect success" << endl;
+    cout << "right port" << right_port << endl;
     if (status == -1) {
       cerr << "Error: cannot connect to socket" << endl;
       cerr << "  (" << right_hostname << "," << right_port << ")" << endl;
@@ -163,8 +165,8 @@ void play() {
     /////////
     right_player_id = (player_id + 1) % num_players;
     left_player_id = (player_id - 1 + num_players) % num_players;
-    cout << "right " << right_player_id << endl;
-    cout << "left " << left_player_id << endl;
+    //    cout << "right " << right_player_id << endl;
+    //cout << "left " << left_player_id << endl;
     if (FD_ISSET(player_fd, &read_fds)) {
       char game[512];
       len = recv(player_fd, game, sizeof(game), 0);
@@ -190,11 +192,10 @@ void play() {
     }
     //this case is from right player;
     else if (FD_ISSET(right_fd, &read_fds)) {
-      cout << "from right!!!!" << endl;
+      //   cout << "from right!!!!" << endl;
       char from_right[512];
-      len = recv(player_fd, from_right, sizeof(from_right), 0);
+      len = recv(right_fd, from_right, sizeof(from_right), 0);
       from_right[len] = '\0';
-      cout << "recevive from Player " << right_player_id << ": " << from_right << endl;
       strcpy(temp, from_right);
       char * temp_ptr;
       //input: Start! Available Hops #<num_hops>
@@ -203,15 +204,17 @@ void play() {
       temp_ptr = strtok(NULL, " ");
       //store this value
       num_hops = atoi(temp_ptr);
-      cout << "testing from right number of hops: " << num_hops << endl;
+      cout << "Recevive potato from Player " << right_player_id << ", Existing number of hops "
+           << num_hops << endl;
+      //cout << "testing from right number of hops: " << num_hops << endl;
     }
     //this case is from left player;
     else if (FD_ISSET(left_fd, &read_fds)) {
-      cout << "from left !!!" << endl;
+      // cout << "from left !!!" << endl;
       char from_left[512];
-      len = recv(player_fd, from_left, sizeof(from_left), 0);
+      len = recv(left_fd, from_left, sizeof(from_left), 0);
       from_left[len] = '\0';
-      cout << "recevive from Player " << left_player_id << ": " << from_left << endl;
+
       strcpy(temp, from_left);
       char * temp_ptr;
       //input: Start! Available Hops #<num_hops>
@@ -220,7 +223,9 @@ void play() {
       temp_ptr = strtok(NULL, " ");
       //store this value
       num_hops = atoi(temp_ptr);
-      cout << "testing from left number of hops: " << num_hops << endl;
+      cout << "recevive potato from Player " << left_player_id << ", Existing number of hops "
+           << num_hops << endl;
+      //      cout << "testing from left number of hops: " << num_hops << endl;
     }
     //game time
     if (num_hops == 1) {
@@ -234,7 +239,7 @@ void play() {
     else {
       num_hops--;
       //right
-      srand(time(0));
+
       if (rand() % 2 == 0) {
         char Potato_str_right[512];
         sprintf(Potato_str_right,
@@ -249,8 +254,9 @@ void play() {
                 "Hops",
                 "#",
                 num_hops);
-        cout << Potato_str_right << endl;
-        len = send(right_fd, Potato_str_right, strlen(Potato_str), 0);
+        cout << "Passing Statement: " << Potato_str_right << endl;
+        len = send(right_fd, Potato_str_right, strlen(Potato_str_right), 0);
+        //   cout << "finish sending right" << endl;
       }
       //left
       else {
@@ -267,7 +273,7 @@ void play() {
                 "Hops",
                 "#",
                 num_hops);
-        cout << Potato_str_left << endl;
+        cout << "Passing Statement: " << Potato_str_left << endl;
         len = send(left_fd, Potato_str_left, strlen(Potato_str_left), 0);
       }
     }
@@ -277,6 +283,7 @@ void play() {
 int main(int argc, char * argv[]) {
   // struct addrinfo host_info;
   //struct addrinfo * host_info_list;
+  srand(time(NULL));
 
   const char * host = NULL;
 
