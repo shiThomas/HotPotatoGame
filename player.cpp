@@ -71,7 +71,7 @@ int set_player(const char * host, int port_num_master) {
   //len = recv(player_fd, plyr, sizeof(struct potato_t), 0);
   plyr_id[len] = '\0';
   player_id = atoi(plyr_id);
-  cout << "Player ID:" << player_id << endl;
+  //cout << "Player ID:" << player_id << endl;
   //send port info and hostname to master;
 
   //  sprintf(buffer, "%s %d %s %s", "Player", player_id, "is", "ready");
@@ -96,22 +96,22 @@ void set_right_player() {
     exit(-1);
   }  //if
 
-  cout << "Connecting to " << right_hostname << " on port " << right_port << "..." << endl;
+  // cout << "Connecting to " << right_hostname << " on port " << right_port << "..." << endl;
 }
 void connect_neigh() {
   //right then left
   if (player_id == 0) {
     //cout << "player 0" << endl;
     status = connect(right_fd, (struct sockaddr *)&right_sock, sizeof(right_sock));
-    cout << "connect success" << endl;
-    cout << "right port" << right_port << endl;
+    // cout << "connect success" << endl;
+    //cout << "right port" << right_port << endl;
     if (status == -1) {
       cerr << "Error: cannot connect to socket" << endl;
       cerr << "  (" << right_hostname << "," << right_port << ")" << endl;
       exit(-1);
     }
     left_fd = accept(server_fd, (struct sockaddr *)&player_in, &newplayer_addr_len);
-    cout << "accept success" << endl;
+    // cout << "accept success" << endl;
     if (status == -1) {
       cerr << "Error: cannot accept connection on socket" << endl;
       exit(-1);
@@ -121,14 +121,14 @@ void connect_neigh() {
   else {
     //cout << "player not 0" << endl;
     left_fd = accept(server_fd, (struct sockaddr *)&player_in, &newplayer_addr_len);
-    cout << "accept success" << endl;
+    //cout << "accept success" << endl;
     if (status == -1) {
       cerr << "Error: cannot accept connection on socket" << endl;
       exit(-1);
     }
     status = connect(right_fd, (struct sockaddr *)&right_sock, sizeof(right_sock));
-    cout << "connect success" << endl;
-    cout << "right port" << right_port << endl;
+    // cout << "connect success" << endl;
+    //cout << "right port" << right_port << endl;
     if (status == -1) {
       cerr << "Error: cannot connect to socket" << endl;
       cerr << "  (" << right_hostname << "," << right_port << ")" << endl;
@@ -171,7 +171,7 @@ void play() {
       char game[512];
       len = recv(player_fd, game, sizeof(game), 0);
       game[len] = '\0';
-      cout << "receive from master " << game << endl;
+      //cout << "receive from master " << game << endl;
       //close signal
 
       if (!strcmp("exit", game)) {
@@ -187,7 +187,8 @@ void play() {
         temp_ptr = strtok(NULL, " ");
         //store this value
         num_hops = atoi(temp_ptr);
-        cout << "testing from master number of hops: " << num_hops << endl;
+        // cout << "Start! number of hops: " << num_hops << endl;
+        // cout << "testing from master number of hops: " << num_hops << endl;
       }
     }
     //this case is from right player;
@@ -204,8 +205,8 @@ void play() {
       temp_ptr = strtok(NULL, " ");
       //store this value
       num_hops = atoi(temp_ptr);
-      cout << "Recevive potato from Player " << right_player_id << ", Existing number of hops "
-           << num_hops << endl;
+      // cout << "Recevive potato from Player " << right_player_id << ", Existing number of hops "
+      //   << num_hops << endl;
       //cout << "testing from right number of hops: " << num_hops << endl;
     }
     //this case is from left player;
@@ -223,8 +224,8 @@ void play() {
       temp_ptr = strtok(NULL, " ");
       //store this value
       num_hops = atoi(temp_ptr);
-      cout << "recevive potato from Player " << left_player_id << ", Existing number of hops "
-           << num_hops << endl;
+      // cout << "recevive potato from Player " << left_player_id << ", Existing number of hops "
+      //   << num_hops << endl;
       //      cout << "testing from left number of hops: " << num_hops << endl;
     }
     //game time
@@ -254,7 +255,8 @@ void play() {
                 "Hops",
                 "#",
                 num_hops);
-        cout << "Passing Statement: " << Potato_str_right << endl;
+        cout << "Sending potato to <" << right_player_id << ">" << endl;
+        // cout << "Passing Statement: " << Potato_str_right << endl;
         len = send(right_fd, Potato_str_right, strlen(Potato_str_right), 0);
         //   cout << "finish sending right" << endl;
       }
@@ -273,7 +275,8 @@ void play() {
                 "Hops",
                 "#",
                 num_hops);
-        cout << "Passing Statement: " << Potato_str_left << endl;
+        cout << "Sending potato to <" << left_player_id << ">" << endl;
+        //cout << "Passing Statement: " << Potato_str_left << endl;
         len = send(left_fd, Potato_str_left, strlen(Potato_str_left), 0);
       }
     }
@@ -342,17 +345,16 @@ int main(int argc, char * argv[]) {
     exit(-1);
   }  //if
   sprintf(buffer, "%d %s", port_num_player, player_hostname);
-  cout << " things to be sent " << buffer << endl;
-  len = send(player_fd, buffer, strlen(buffer), 0);
-  cout << "player info sent success" << endl;
 
-  cout << "Waiting for connection on port " << port_num_player << endl;
+  len = send(player_fd, buffer, strlen(buffer), 0);
+
+  //  cout << "Waiting for connection on port " << port_num_player << endl;
   //neighbour info including id, host and port
   char right_info[512];
   len = recv(player_fd, right_info, sizeof(right_info), 0);
   right_info[len] = '\0';
   //parse info
-  cout << "received neigh info " << right_info << endl;
+  // cout << "received neigh info " << right_info << endl;
   strcpy(temp, right_info);
   char * temp_ptr;
   temp_ptr = strtok(temp, " ");
@@ -368,17 +370,28 @@ int main(int argc, char * argv[]) {
   //right port here
   right_port = atoi(temp_ptr);
   //connect to neighbour
-  cout << "settings for right finished" << endl;
+  cout << "Connected as player <" << player_id << ">"
+       << " out of <" << num_players << "> total players" << endl;
+  // cout << "settings for right finished" << endl;
   set_right_player();
-  cout << "finish setting right player" << endl;
+  //cout << "finish setting right player" << endl;
 
   //send ready
   char ready_msg[64];
-  sprintf(ready_msg, "%s %d %s %s %s %s", "Player", player_id, "is", "ready", "to", "play!");
+  sprintf(ready_msg,
+          "%s %s%d%s %s %s %s %s",
+          "Player",
+          "<",
+          player_id,
+          ">",
+          "is",
+          "ready",
+          "to",
+          "play");
   len = send(player_fd, ready_msg, strlen(ready_msg), 0);
-  cout << "ready_msg sent" << endl;
+
   connect_neigh();
-  cout << "Starting Playing" << endl;
+
   play();
   sleep(3);
   close(player_fd);

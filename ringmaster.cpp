@@ -55,7 +55,7 @@ void set_server(char host[64], const char * port, int port_num) {
     exit(-1);
   }  //if
 
-  cout << "Waiting for connection on port " << port << endl;
+  //cout << "Waiting for connection on port " << port << endl;
 }
 //connect to players and store information in potato
 potato connect_player(potato player) {
@@ -74,7 +74,7 @@ void neigh_setup(potato * player_list, int num_players) {
   for (int i = 0; i < num_players; i++) {
     len = recv(player_list[i].playerfd, buffer, 32, 0);
     buffer[len] = '\0';
-    cout << "Server received: " << buffer << endl;
+    // cout << "Server received: " << buffer << endl;
     if (len > 0) {
       strcpy(temp, buffer);
       char * temp_ptr;
@@ -83,8 +83,8 @@ void neigh_setup(potato * player_list, int num_players) {
       temp_ptr = strtok(NULL, " ");
       strcpy(player_list[i].player_hostname, temp_ptr);
     }
-    cout << "hostname " << player_list[i].player_hostname << endl;
-    cout << "port " << player_list[i].player_port << endl;
+    //  cout << "hostname " << player_list[i].player_hostname << endl;
+    //cout << "port " << player_list[i].player_port << endl;
   }
 
   //inform players of their right neighbour
@@ -97,10 +97,9 @@ void neigh_setup(potato * player_list, int num_players) {
             player_list[(i + 1) % num_players].player_id,
             player_list[(i + 1) % num_players].player_hostname,
             player_list[(i + 1) % num_players].player_port);
-    cout << "Neigh Info " << neigh_info << endl;
+    // cout << "Neigh Info " << neigh_info << endl;
     len = send(player_list[i].playerfd, neigh_info, strlen(neigh_info), 0);
   }
-  cout << "neigh info sent" << endl;
 }
 
 int main(int argc, char * argv[]) {
@@ -141,8 +140,8 @@ int main(int argc, char * argv[]) {
   set_server(host, port, port_num);
   //cout << "finish setserver" << endl;
 
-  cout << "Master on " << host << endl;
   cout << "Port Number " << port_num << endl;
+  cout << "Potato Ringmaster" << endl;
   cout << "Number of Players " << num_players << endl;
   cout << "Number of Hops " << num_hops << endl;
 
@@ -157,7 +156,7 @@ int main(int argc, char * argv[]) {
     player_list[i].hops_total = num_hops;
     player_list[i].player_num = num_players;
     player_list[i].player_id = i;
-    cout << "Player " << player_list[i].player_id << " on PORT " << port_num << endl;
+    // cout << "Player " << player_list[i].player_id << " on PORT " << port_num << endl;
     //send
 
     //len = send(player_list[i].playerfd, player_list[i], sizeof(struct potato_t), 0);
@@ -182,7 +181,6 @@ int main(int argc, char * argv[]) {
   neigh_setup(player_list, num_players);
   //check msg Player <number> is ready to play
 
-  cout << "ready to play msg" << endl;
   char ready_msg[64];
   for (int i = 0; i < num_players; i++) {
     len = recv(player_list[i].playerfd, ready_msg, sizeof(ready_msg), 0);
@@ -195,7 +193,7 @@ int main(int argc, char * argv[]) {
 
   //when there is no hops
   if (num_hops == 0) {
-    cout << "Game has started, sending potato to player: No Player" << endl;
+    cout << "Ready to start the game, sending potato to player: No Player" << endl;
     cout << "Trace of Potato:" << endl;
     char exit_msg[64];
     sprintf(exit_msg, "%s", "exit");
@@ -222,10 +220,10 @@ int main(int argc, char * argv[]) {
       }
       FD_SET(player_list[i].playerfd, &read_fds);
     }
-    cout << "Game has started, sending potato to player: " << first_player_id << endl;
+    cout << "Ready to start the game, sending potato to player: " << first_player_id << endl;
     sprintf(str, "%s %s %s %s%d", "Start!", "Available", " Hops", "#", num_hops);
     //send starting info to the selected player
-    cout << "sending" << str << endl;
+    // cout << "sending" << str << endl;
     len = send(player_list[first_player_id].playerfd, str, strlen(str), 0);
 
     len = select(fdmax + 1, &read_fds, NULL, NULL, NULL);
@@ -245,7 +243,7 @@ int main(int argc, char * argv[]) {
     char return_msg[64];
     len = recv(player_list[Player_return].playerfd, return_msg, sizeof(return_msg), 0);
     return_msg[len] = '\0';
-    cout << "Player " << return_msg << " returned potato" << endl;
+    //cout << "Player " << return_msg << " returned potato" << endl;
     //haven't figured out a way to print trace
     cout << "Trace of Potato:" << endl;
     char exit_m[64];
