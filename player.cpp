@@ -141,7 +141,7 @@ void connect_neigh() {
 
 void play() {
   fd_set read_fds;  // temp file descriptor list for select()
-
+  char trace[40960];
   while (1) {
     FD_ZERO(&read_fds);  //clear temp sets
     FD_SET(player_fd, &read_fds);
@@ -186,54 +186,80 @@ void play() {
         //this part is <num_hops>
         temp_ptr = strtok(NULL, " ");
         //store this value
+        //     cout << temp_ptr << endl;
         num_hops = atoi(temp_ptr);
-        // cout << "Start! number of hops: " << num_hops << endl;
-        // cout << "testing from master number of hops: " << num_hops << endl;
+
+        //first element of trace
+        char for_trace[64];
+        sprintf(for_trace, "%s%d%s", "<", player_id, ">|");
+        strcat(trace, for_trace);
+        //len = send(player_fd, for_trace, 3, 0);
       }
     }
     //this case is from right player;
+
     else if (FD_ISSET(right_fd, &read_fds)) {
-      //   cout << "from right!!!!" << endl;
-      char from_right[512];
+      //      cout << "from right!!!!" << endl;
+      char from_right[40960];
       len = recv(right_fd, from_right, sizeof(from_right), 0);
       from_right[len] = '\0';
       strcpy(temp, from_right);
       char * temp_ptr;
-      //input: Start! Available Hops #<num_hops>
+
+      //this step gives us trace
+      temp_ptr = strtok(from_right, "|#");
+      sprintf(trace, "%s", temp_ptr);
+      char for_trace[64];
+      sprintf(for_trace, "%s%d%s", ",<", player_id, ">|");
+      strcat(trace, for_trace);
+      // cout << "testing trace: " << temp_ptr << endl;
+      // cout << "combined trace " << trace << endl;
+
       temp_ptr = strtok(temp, "#");
       //this part is <num_hops>
       temp_ptr = strtok(NULL, " ");
       //store this value
+      //      cout << temp_ptr << endl;
       num_hops = atoi(temp_ptr);
-      // cout << "Recevive potato from Player " << right_player_id << ", Existing number of hops "
-      //   << num_hops << endl;
-      //cout << "testing from right number of hops: " << num_hops << endl;
+      //char for_trace[64];
+      //sprintf(for_trace, "%s%d%s", "<", player_id, ">");
+      //len = send(player_fd, for_trace, 3, 0);
     }
     //this case is from left player;
     else if (FD_ISSET(left_fd, &read_fds)) {
-      // cout << "from left !!!" << endl;
-      char from_left[512];
+      //cout << "from left !!!" << endl;
+      char from_left[40960];
       len = recv(left_fd, from_left, sizeof(from_left), 0);
       from_left[len] = '\0';
 
       strcpy(temp, from_left);
       char * temp_ptr;
+      //this step gives us trace
+      temp_ptr = strtok(from_left, "|#");
+      sprintf(trace, "%s", temp_ptr);
+      char for_trace[64];
+      sprintf(for_trace, "%s%d%s", ",<", player_id, ">|");
+      strcat(trace, for_trace);
+      //cout << "testing trace: " << temp_ptr << endl;
+      //cout << "combined trace " << trace << endl;
       //input: Start! Available Hops #<num_hops>
       temp_ptr = strtok(temp, "#");
       //this part is <num_hops>
       temp_ptr = strtok(NULL, " ");
       //store this value
       num_hops = atoi(temp_ptr);
-      // cout << "recevive potato from Player " << left_player_id << ", Existing number of hops "
-      //   << num_hops << endl;
-      //      cout << "testing from left number of hops: " << num_hops << endl;
+      // len = send(player_fd, for_trace, 3, 0);
     }
     //game time
     if (num_hops == 1) {
       //num_hops--=0
-      cout << "I'm it!" << endl;
-      char end_msg[64];
-      sprintf(end_msg, "%s %d", "Player_ID:", player_id);
+      cout << "I'm it" << endl;
+      char * temp_ptr;
+
+      temp_ptr = strtok(trace, "|");
+      //cout << temp_ptr << endl;
+      char end_msg[40960];
+      sprintf(end_msg, "%s", temp_ptr);
       len = send(player_fd, end_msg, strlen(end_msg), 0);
     }
     //time for left and right pass
@@ -247,7 +273,7 @@ void play() {
                 "%s %s %s %s %s %d %s %s %s%d",
                 "Pass",
                 "potato",
-                "right",
+                "left",
                 "to",
                 "Player",
                 right_player_id,
@@ -255,9 +281,12 @@ void play() {
                 "Hops",
                 "#",
                 num_hops);
+        //append trace here
+        strcat(trace, Potato_str_right);
         cout << "Sending potato to <" << right_player_id << ">" << endl;
-        // cout << "Passing Statement: " << Potato_str_right << endl;
-        len = send(right_fd, Potato_str_right, strlen(Potato_str_right), 0);
+        //cout << "Passing Statement: " << trace << endl;
+        sleep(1);
+        len = send(right_fd, trace, strlen(trace), 0);
         //   cout << "finish sending right" << endl;
       }
       //left
@@ -275,9 +304,11 @@ void play() {
                 "Hops",
                 "#",
                 num_hops);
+        strcat(trace, Potato_str_left);
         cout << "Sending potato to <" << left_player_id << ">" << endl;
-        //cout << "Passing Statement: " << Potato_str_left << endl;
-        len = send(left_fd, Potato_str_left, strlen(Potato_str_left), 0);
+        //cout << "Passing Statement: " << trace << endl;
+        sleep(1);
+        len = send(left_fd, trace, strlen(trace), 0);
       }
     }
   }

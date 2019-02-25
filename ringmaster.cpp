@@ -195,6 +195,7 @@ int main(int argc, char * argv[]) {
   if (num_hops == 0) {
     cout << "Ready to start the game, sending potato to player: No Player" << endl;
     cout << "Trace of Potato:" << endl;
+    cout << "" << endl;
     char exit_msg[64];
     sprintf(exit_msg, "%s", "exit");
     //inform players to exit
@@ -240,12 +241,19 @@ int main(int argc, char * argv[]) {
         break;
       }
     }
-    char return_msg[64];
+    //where trace info is acquired
+    //   for(int i =0;i<num_hops;i++){
+    //len = acq
+    //}
+
+    //Where master receives return
+    char return_msg[40960];
     len = recv(player_list[Player_return].playerfd, return_msg, sizeof(return_msg), 0);
     return_msg[len] = '\0';
     //cout << "Player " << return_msg << " returned potato" << endl;
     //haven't figured out a way to print trace
     cout << "Trace of Potato:" << endl;
+    cout << return_msg << endl;
     char exit_m[64];
     sprintf(exit_m, "%s", "exit");
     //inform players to exit
