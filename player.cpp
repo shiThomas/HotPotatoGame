@@ -191,7 +191,7 @@ void play() {
 
         //first element of trace
         char for_trace[64];
-        sprintf(for_trace, "%s%d%s", "<", player_id, ">|");
+        sprintf(for_trace, "%d%s", player_id, "|");
         strcat(trace, for_trace);
         //len = send(player_fd, for_trace, 3, 0);
       }
@@ -210,7 +210,7 @@ void play() {
       temp_ptr = strtok(from_right, "|#");
       sprintf(trace, "%s", temp_ptr);
       char for_trace[64];
-      sprintf(for_trace, "%s%d%s", ",<", player_id, ">|");
+      sprintf(for_trace, "%s%d%s", ",", player_id, "|");
       strcat(trace, for_trace);
       // cout << "testing trace: " << temp_ptr << endl;
       // cout << "combined trace " << trace << endl;
@@ -238,7 +238,7 @@ void play() {
       temp_ptr = strtok(from_left, "|#");
       sprintf(trace, "%s", temp_ptr);
       char for_trace[64];
-      sprintf(for_trace, "%s%d%s", ",<", player_id, ">|");
+      sprintf(for_trace, "%s%d%s", ",", player_id, "|");
       strcat(trace, for_trace);
       //cout << "testing trace: " << temp_ptr << endl;
       //cout << "combined trace " << trace << endl;
@@ -283,7 +283,7 @@ void play() {
                 num_hops);
         //append trace here
         strcat(trace, Potato_str_right);
-        cout << "Sending potato to <" << right_player_id << ">" << endl;
+        cout << "Sending potato to " << right_player_id << endl;
         //cout << "Passing Statement: " << trace << endl;
         sleep(1);
         len = send(right_fd, trace, strlen(trace), 0);
@@ -401,8 +401,8 @@ int main(int argc, char * argv[]) {
   //right port here
   right_port = atoi(temp_ptr);
   //connect to neighbour
-  cout << "Connected as player <" << player_id << ">"
-       << " out of <" << num_players << "> total players" << endl;
+  cout << "Connected as player " << player_id << " out of " << num_players << " total players"
+       << endl;
   // cout << "settings for right finished" << endl;
   set_right_player();
   //cout << "finish setting right player" << endl;
@@ -410,11 +410,11 @@ int main(int argc, char * argv[]) {
   //send ready
   char ready_msg[64];
   sprintf(ready_msg,
-          "%s %s%d%s %s %s %s %s",
+          "%s %d %s %s %s %s",
           "Player",
-          "<",
+
           player_id,
-          ">",
+
           "is",
           "ready",
           "to",

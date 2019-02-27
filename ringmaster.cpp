@@ -142,8 +142,8 @@ int main(int argc, char * argv[]) {
 
   //  cout << "Port Number " << port_num << endl;
   cout << "Potato Ringmaster" << endl;
-  cout << "Number of Players " << num_players << endl;
-  cout << "Number of Hops " << num_hops << endl;
+  cout << "Players = " << num_players << endl;
+  cout << "Hops = " << num_hops << endl;
 
   // int client_connection_fd;
   //initialize player list;
@@ -186,7 +186,7 @@ int main(int argc, char * argv[]) {
     len = recv(player_list[i].playerfd, ready_msg, sizeof(ready_msg), 0);
     ready_msg[len] = '\0';
     sleep(1);
-    cout << "Server received: " << ready_msg << endl;
+    cout << ready_msg << endl;
   }
 
   //game start
@@ -194,9 +194,9 @@ int main(int argc, char * argv[]) {
   sleep(3);
   //when there is no hops
   if (num_hops == 0) {
-    cout << "Ready to start the game, sending potato to player: No Player" << endl;
-    cout << "Trace of Potato:" << endl;
-    cout << "" << endl;
+    //  cout << "Ready to start the game, sending potato to player " << endl;
+    //cout << "Trace of Potato:" << endl;
+    //cout << "" << endl;
     char exit_msg[64];
     sprintf(exit_msg, "%s", "exit");
     //inform players to exit
@@ -222,7 +222,7 @@ int main(int argc, char * argv[]) {
       }
       FD_SET(player_list[i].playerfd, &read_fds);
     }
-    cout << "Ready to start the game, sending potato to player: " << first_player_id << endl;
+    cout << "Ready to start the game, sending potato to player " << first_player_id << endl;
     sprintf(str, "%s %s %s %s%d", "Start!", "Available", " Hops", "#", num_hops);
     //send starting info to the selected player
     // cout << "sending" << str << endl;
